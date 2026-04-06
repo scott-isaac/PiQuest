@@ -1,504 +1,66 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pi Quest</title>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Inter:wght@400;600;700&display=swap');
-
-  :root {
-    --bg: #0e0e1a;
-    --surface: #16162a;
-    --border: #2a2a4a;
-    --gold: #f0c040;
-    --gold-dim: #b8922e;
-    --green: #4ade80;
-    --red: #f87171;
-    --text: #e2e2f0;
-    --muted: #8888aa;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem 1rem;
-  }
-
-  h1 {
-    font-family: 'MedievalSharp', cursive;
-    font-size: 2.8rem;
-    color: var(--gold);
-    text-shadow: 0 0 30px rgba(240, 192, 64, 0.3);
-    margin-bottom: 0.25rem;
-  }
-
-  .subtitle {
-    color: var(--muted);
-    font-size: 0.9rem;
-    margin-bottom: 2rem;
-  }
-
-  /* Screens */
-  .screen { display: none; width: 100%; max-width: 520px; }
-  .screen.active { display: flex; flex-direction: column; align-items: center; }
-
-  /* Setup screen */
-  .mode-btn {
-    width: 100%;
-    padding: 0.9rem 1.2rem;
-    margin-bottom: 0.6rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 1rem;
-    cursor: pointer;
-    text-align: left;
-    transition: border-color 0.2s, background 0.2s;
-  }
-  .mode-btn:hover { border-color: var(--gold); background: #1e1e3a; }
-  .mode-btn .label { font-weight: 700; }
-  .mode-btn .desc { color: var(--muted); font-size: 0.85rem; }
-
-  .sound-toggle {
-    margin-top: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    color: var(--muted);
-    font-size: 0.85rem;
-    cursor: pointer;
-    user-select: none;
-  }
-  .sound-toggle input { accent-color: var(--gold); width: 18px; height: 18px; }
-
-  /* Game screen */
-  .progress-bar {
-    width: 100%;
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
-    margin-bottom: 1.5rem;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--gold-dim), var(--gold));
-    border-radius: 3px;
-    transition: width 0.4s ease;
-  }
-
-  .step-label {
-    font-size: 0.8rem;
-    color: var(--muted);
-    margin-bottom: 0.3rem;
-  }
-
-  .milestone {
-    font-family: 'MedievalSharp', cursive;
-    font-size: 1.5rem;
-    color: var(--gold);
-    margin-bottom: 1.2rem;
-    text-align: center;
-    min-height: 2.2rem;
-  }
-
-  .pi-display {
-    font-size: 0.95rem;
-    color: var(--muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1rem 1.2rem;
-    width: 100%;
-    margin-bottom: 1.5rem;
-    word-break: break-all;
-    line-height: 1.7;
-    text-align: center;
-  }
-  .pi-display .known { color: var(--text); }
-  .pi-display .cursor { color: var(--gold); font-weight: 700; }
-
-  .input-row {
-    display: flex;
-    gap: 0.5rem;
-    width: 100%;
-    margin-bottom: 1rem;
-  }
-
-  #digit-input {
-    flex: 1;
-    padding: 0.85rem 1rem;
-    font-size: 1.4rem;
-    font-family: 'Inter', sans-serif;
-    letter-spacing: 0.3rem;
-    text-align: center;
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  #digit-input:focus { border-color: var(--gold); }
-  #digit-input.shake {
-    animation: shake 0.4s;
-    border-color: var(--red);
-  }
-  #digit-input.correct {
-    border-color: var(--green);
-  }
-
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20%, 60% { transform: translateX(-6px); }
-    40%, 80% { transform: translateX(6px); }
-  }
-
-  .submit-btn {
-    padding: 0.85rem 1.6rem;
-    background: linear-gradient(135deg, var(--gold-dim), var(--gold));
-    border: none;
-    border-radius: 10px;
-    color: #0e0e1a;
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-  .submit-btn:hover { opacity: 0.9; }
-
-  /* Feedback area */
-  .feedback {
-    width: 100%;
-    min-height: 5rem;
-    text-align: center;
-    padding: 1rem;
-    border-radius: 10px;
-    margin-bottom: 1rem;
-    transition: opacity 0.3s;
-  }
-  .feedback.success { background: rgba(74, 222, 128, 0.1); color: var(--green); }
-  .feedback.failure { background: rgba(248, 113, 113, 0.1); color: var(--red); }
-  .feedback .death-msg { font-size: 0.9rem; margin-top: 0.4rem; color: var(--muted); }
-  .feedback .correct-answer { font-size: 0.85rem; margin-top: 0.5rem; color: var(--text); }
-
-  /* Victory screen */
-  .victory-title {
-    font-family: 'MedievalSharp', cursive;
-    font-size: 2.2rem;
-    color: var(--gold);
-    margin-bottom: 0.5rem;
-  }
-  .victory-pi {
-    font-size: 0.9rem;
-    color: var(--text);
-    background: var(--surface);
-    border: 1px solid var(--gold-dim);
-    border-radius: 10px;
-    padding: 1.2rem;
-    margin: 1.5rem 0;
-    word-break: break-all;
-    line-height: 1.8;
-    text-align: center;
-  }
-  .play-again {
-    margin-top: 1rem;
-    padding: 0.8rem 2rem;
-    background: transparent;
-    border: 1px solid var(--gold);
-    border-radius: 10px;
-    color: var(--gold);
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .play-again:hover { background: rgba(240, 192, 64, 0.1); }
-
-  /* Confetti */
-  .confetti-container {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 999;
-  }
-  .confetti {
-    position: absolute;
-    top: -10px;
-    width: 8px; height: 8px;
-    opacity: 0.9;
-    animation: fall linear forwards;
-  }
-  @keyframes fall {
-    to { transform: translateY(105vh) rotate(720deg); opacity: 0; }
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pi Quest</title>
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<h1>Pi Quest</h1>
-<p class="subtitle">Memorize 100 digits of Pi, one quest at a time</p>
+  <h1>Pi Quest</h1>
+  <p class="subtitle">Memorize 100 digits of Pi, one quest at a time</p>
 
-<!-- Setup Screen -->
-<div id="setup-screen" class="screen active">
-  <button class="mode-btn" data-mode="1">
-    <span class="label">Normal</span><br>
-    <span class="desc">Full milestone hints to guide your memory</span>
-  </button>
-  <button class="mode-btn" data-mode="2">
-    <span class="label">Hard</span><br>
-    <span class="desc">Only emoji clues &mdash; the rest is up to you</span>
-  </button>
-  <button class="mode-btn" data-mode="3">
-    <span class="label">Full</span><br>
-    <span class="desc">No hints at all &mdash; pure recall</span>
-  </button>
-  <label class="sound-toggle">
-    <input type="checkbox" id="sound-check" checked> Enable sound effects
-  </label>
-</div>
-
-<!-- Game Screen -->
-<div id="game-screen" class="screen">
-  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-  <div class="step-label" id="step-label"></div>
-  <div class="milestone" id="milestone"></div>
-  <div class="pi-display" id="pi-display"></div>
-  <div class="input-row">
-    <input type="text" id="digit-input" maxlength="5" placeholder="_ _ _ _ _" inputmode="numeric" autocomplete="off">
-    <button class="submit-btn" id="submit-btn">Go</button>
+  <!-- Setup Screen -->
+  <div id="setup-screen" class="screen active">
+    <button class="mode-btn" data-mode="1">
+      <span class="label">Normal</span><br>
+      <span class="desc">Full milestone hints to guide your memory</span>
+    </button>
+    <button class="mode-btn" data-mode="2">
+      <span class="label">Hard</span><br>
+      <span class="desc">Only emoji clues &mdash; the rest is up to you</span>
+    </button>
+    <button class="mode-btn" data-mode="3">
+      <span class="label">Full</span><br>
+      <span class="desc">No hints at all &mdash; pure recall</span>
+    </button>
+    <label class="sound-toggle">
+      <input type="checkbox" id="sound-check" checked> Enable sound effects
+    </label>
   </div>
-  <div class="feedback" id="feedback"></div>
-</div>
 
-<!-- Victory Screen -->
-<div id="victory-screen" class="screen">
-  <div style="font-size:3rem;margin-bottom:0.5rem;">&#x1F451;</div>
-  <div class="victory-title">Claim the Crown of Code!</div>
-  <p style="color:var(--muted);margin-top:0.5rem;">You have conquered Pi's challenge and become a legend.</p>
-  <div class="victory-pi" id="victory-pi"></div>
-  <button class="play-again" id="play-again">Play Again</button>
-</div>
+  <!-- Game Screen -->
+  <div id="game-screen" class="screen">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="step-label" id="step-label"></div>
+    <div class="milestone" id="milestone"></div>
+    <div class="pi-display" id="pi-display"></div>
+    <div class="input-row">
+      <input type="text" id="digit-input" maxlength="5" placeholder="_ _ _ _ _" inputmode="numeric" autocomplete="off">
+      <button class="submit-btn" id="submit-btn">Go</button>
+    </div>
+    <div class="feedback" id="feedback"></div>
+  </div>
 
-<script>
-const PI_CHUNKS = [
-  "26535","89793","23846","26433","83279","50288","41971","69399","37510",
-  "58209","74944","59230","78164","06286","20899","86280","34825","34211",
-  "70679"
-];
+  <!-- Victory Screen -->
+  <div id="victory-screen" class="screen">
+    <div style="font-size:3rem;margin-bottom:0.5rem;">&#x1F451;</div>
+    <div class="victory-title">Claim the Crown of Code!</div>
+    <p style="color:var(--muted);margin-top:0.5rem;">You have conquered Pi's challenge and become a legend.</p>
+    <div class="victory-pi" id="victory-pi"></div>
+    <button class="play-again" id="play-again">Play Again</button>
+  </div>
 
-const MILESTONES = [
-  "\u{1F4E6} Dive to survive",
-  "\u{1F9CA} Fight a mighty yeti",
-  "\u{1F333} Free the treefolk",
-  "\u{1FAA4} Trap set: click-click!",
-  "\u26F8\uFE0F Skate past the gates",
-  "\u{1F4A5} Boom! The bridge breaks",
-  "\u{1F525} Forge ring of fire",
-  "\u{1F9D7} Climb the craggy cliff",
-  "\u{1F9DA} Dance with the dryads",
-  "\u2694\uFE0F Five brave elves duel",
-  "\u{1F30C} Steal the foretold scroll",
-  "\u{1F525} Firewalk frenzy",
-  "\u{1F4A7} Sip from the sapphire spring",
-  "\u{1FAA8} Sleep in the sacred stone",
-  "\u{1F409} Dodge twin dragons",
-  "\u{1F577}\uFE0F Eight-legged ambush!",
-  "\u2604\uFE0F Catch the comet",
-  "\u{1F5FC} Scale the silver spire",
-  "\u{1F40D} Slay the shadow serpent"
-];
+  <!-- Data (swappable quest modules) -->
+  <script src="js/data/chunks.js"></script>
+  <script src="js/data/milestones.js"></script>
+  <script src="js/data/deaths.js"></script>
 
-const DEATHS = [
-  "You dive too deep and discover\u2026 the bottomless pit of regret.",
-  "The yeti mistakes you for a snow cone. Crunch.",
-  "You hug the wrong tree. It\u2019s a mimic.",
-  "Your own trap triggers. You explode in slapstick slow motion.",
-  "You slip on magical ice and land in another timeline.",
-  "The bridge breaks. You pose heroically as you fall forever.",
-  "You forge the ring\u2026 in your dreams. It burns your soul.",
-  "You climb the cliff\u2014then gravity says hi.",
-  "Dryads invite you to dance\u2026 to death.",
-  "Elves duel you instead. You\u2019re fencing practice now.",
-  "You steal the scroll\u2014and trigger every magical alarm ever.",
-  "You firewalk\u2026 barefoot. Now you\u2019re toast.",
-  "The spring is refreshing\u2026 and cursed. You dissolve poetically.",
-  "The sacred stone snores and rolls over you.",
-  "The dragons don\u2019t like dodging games. You\u2019re flamb\u00e9.",
-  "You poke the spider nest. Regret is swift.",
-  "You catch the comet\u2014with your face. Vaporized.",
-  "You fall from the spire yelling \u2018YOLOooooo\u2026\u2019",
-  "The serpent\u2019s shadow eats your shadow. Then the rest of you."
-];
+  <!-- Engine -->
+  <script src="js/audio.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/game.js"></script>
 
-let mode = 1;
-let soundEnabled = true;
-let currentIndex = 0;
-let audioCtx = null;
-
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
-}
-
-function playTone(freq, duration, type = 'sine') {
-  if (!soundEnabled) return;
-  try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start();
-    osc.stop(ctx.currentTime + duration);
-  } catch (e) {}
-}
-
-function playSuccess() {
-  playTone(523, 0.15);
-  setTimeout(() => playTone(659, 0.15), 100);
-  setTimeout(() => playTone(784, 0.3), 200);
-}
-
-function playFail() {
-  playTone(300, 0.2, 'sawtooth');
-  setTimeout(() => playTone(200, 0.4, 'sawtooth'), 150);
-}
-
-function playVictory() {
-  [523,659,784,1047].forEach((f,i) => setTimeout(() => playTone(f, 0.3), i * 150));
-}
-
-function formatMilestone(m) {
-  if (mode === 2) return m.split(' ')[0];
-  if (mode === 3) return '\u{1F9ED} Your next challenge awaits\u2026';
-  return m;
-}
-
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-function renderPiDisplay() {
-  const prefix = '<span class="known">3.14159</span> ';
-  const completed = PI_CHUNKS.slice(0, currentIndex).map(c => `<span class="known">${c}</span>`).join(' ');
-  const cursor = currentIndex < PI_CHUNKS.length ? ' <span class="cursor">?????</span>' : '';
-  document.getElementById('pi-display').innerHTML = prefix + completed + cursor;
-}
-
-function renderGame() {
-  document.getElementById('step-label').textContent = `Step ${currentIndex + 1} of ${PI_CHUNKS.length}`;
-  document.getElementById('milestone').textContent = formatMilestone(MILESTONES[currentIndex]);
-  document.getElementById('progress-fill').style.width = `${(currentIndex / PI_CHUNKS.length) * 100}%`;
-  renderPiDisplay();
-  document.getElementById('feedback').className = 'feedback';
-  document.getElementById('feedback').innerHTML = '';
-  const input = document.getElementById('digit-input');
-  input.value = '';
-  input.className = '';
-  input.focus();
-}
-
-function handleSubmit() {
-  const input = document.getElementById('digit-input');
-  const guess = input.value.trim();
-  if (guess.length === 0) return;
-
-  if (guess === PI_CHUNKS[currentIndex]) {
-    playSuccess();
-    input.classList.add('correct');
-    const fb = document.getElementById('feedback');
-    fb.className = 'feedback success';
-    fb.innerHTML = '<strong>Success! Onward!</strong>';
-    currentIndex++;
-
-    if (currentIndex >= PI_CHUNKS.length) {
-      setTimeout(showVictory, 600);
-      return;
-    }
-    setTimeout(renderGame, 600);
-  } else {
-    playFail();
-    input.classList.add('shake');
-    const fb = document.getElementById('feedback');
-    fb.className = 'feedback failure';
-    fb.innerHTML = `<strong>\u{1F480} ${DEATHS[currentIndex]}</strong>
-      <div class="correct-answer">\u{1F9E0} The correct chunk was: <strong>${PI_CHUNKS[currentIndex]}</strong></div>
-      <div class="death-msg">The scroll crumbles\u2026 back to the beginning.</div>`;
-    currentIndex = 0;
-    setTimeout(renderGame, 2500);
-  }
-}
-
-function showVictory() {
-  showScreen('victory-screen');
-  const allDigits = '3.14159 ' + PI_CHUNKS.join(' ');
-  document.getElementById('victory-pi').textContent = allDigits;
-  document.getElementById('progress-fill').style.width = '100%';
-  playVictory();
-  spawnConfetti();
-}
-
-function spawnConfetti() {
-  const container = document.createElement('div');
-  container.className = 'confetti-container';
-  document.body.appendChild(container);
-  const colors = ['#f0c040','#4ade80','#f87171','#60a5fa','#c084fc','#fb923c'];
-  for (let i = 0; i < 80; i++) {
-    const el = document.createElement('div');
-    el.className = 'confetti';
-    el.style.left = Math.random() * 100 + '%';
-    el.style.background = colors[Math.floor(Math.random() * colors.length)];
-    el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
-    el.style.animationDelay = (Math.random() * 1.5) + 's';
-    el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-    el.style.width = (5 + Math.random() * 6) + 'px';
-    el.style.height = (5 + Math.random() * 6) + 'px';
-    container.appendChild(el);
-  }
-  setTimeout(() => container.remove(), 5000);
-}
-
-// Setup handlers
-document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    mode = parseInt(btn.dataset.mode);
-    soundEnabled = document.getElementById('sound-check').checked;
-    currentIndex = 0;
-    showScreen('game-screen');
-    renderGame();
-  });
-});
-
-document.getElementById('submit-btn').addEventListener('click', handleSubmit);
-document.getElementById('digit-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') handleSubmit();
-});
-
-// Only allow digits in input
-document.getElementById('digit-input').addEventListener('input', e => {
-  e.target.value = e.target.value.replace(/[^0-9]/g, '');
-});
-
-document.getElementById('play-again').addEventListener('click', () => {
-  currentIndex = 0;
-  showScreen('setup-screen');
-});
-</script>
 </body>
 </html>
