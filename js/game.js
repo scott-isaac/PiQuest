@@ -4,6 +4,7 @@
  */
 let mode = 1;
 let currentIndex = 0;
+let pendingTimer = null;
 
 function formatMilestone(m) {
   if (mode === 2) return m.split(" ")[0];
@@ -56,25 +57,53 @@ function showVictory() {
   spawnConfetti();
 }
 
+function advanceToNext() {
+  if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+
+  if (currentIndex >= PI_CHUNKS.length) {
+    showVictory();
+    return;
+  }
+
+  document.getElementById("step-label").textContent =
+    `Step ${currentIndex + 1} of ${PI_CHUNKS.length}`;
+  document.getElementById("milestone").textContent =
+    formatMilestone(MILESTONES[currentIndex]);
+  document.getElementById("progress-fill").style.width =
+    `${(currentIndex / PI_CHUNKS.length) * 100}%`;
+  renderPiDisplay();
+
+  const input = document.getElementById("digit-input");
+  input.value = "";
+  input.className = "";
+  input.focus();
+}
+
 function handleSubmit() {
   const input = document.getElementById("digit-input");
   const guess = input.value.trim();
   if (guess.length === 0) return;
 
+  // Cancel any pending failure timer if the player is already moving
+  if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+
   if (guess === PI_CHUNKS[currentIndex]) {
     Audio.playSuccess();
-    input.classList.add("correct");
 
     const fb = document.getElementById("feedback");
     fb.className = "feedback success";
     fb.innerHTML = "<strong>Success! Onward!</strong>";
 
     currentIndex++;
-    if (currentIndex >= PI_CHUNKS.length) {
-      setTimeout(showVictory, 600);
-    } else {
-      setTimeout(renderGame, 600);
-    }
+    // Advance the UI immediately so the player can start typing
+    advanceToNext();
+
+    // Clear the success banner after a moment
+    pendingTimer = setTimeout(() => {
+      fb.className = "feedback";
+      fb.innerHTML = "";
+      pendingTimer = null;
+    }, 600);
   } else {
     Audio.playFail();
     input.classList.add("shake");
@@ -87,7 +116,7 @@ function handleSubmit() {
       `<div class="death-msg">The scroll crumbles\u2026 back to the beginning.</div>`;
 
     currentIndex = 0;
-    setTimeout(renderGame, 2500);
+    pendingTimer = setTimeout(() => { renderGame(); pendingTimer = null; }, 2500);
   }
 }
 
