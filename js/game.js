@@ -18,12 +18,12 @@ function showScreen(id) {
 }
 
 function renderPiDisplay() {
-  const prefix = '<span class="known">3.14159</span> ';
+  const prefix = '<span class="chunk known">3.14159</span> ';
   const completed = PI_CHUNKS.slice(0, currentIndex)
-    .map(c => `<span class="known">${c}</span>`)
+    .map(c => `<span class="chunk known">${c}</span>`)
     .join(" ");
   const cursor = currentIndex < PI_CHUNKS.length
-    ? ' <span class="cursor">?????</span>'
+    ? ' <span class="chunk cursor">?????</span>'
     : "";
   document.getElementById("pi-display").innerHTML = prefix + completed + cursor;
 }
