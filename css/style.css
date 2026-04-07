@@ -45,6 +45,61 @@ h1 {
 .screen { display: none; width: 100%; max-width: 520px; }
 .screen.active { display: flex; flex-direction: column; align-items: center; }
 
+/* ── Quest picker ───────────────────────────────────── */
+.section-label {
+  font-family: 'MedievalSharp', cursive;
+  font-size: 1.3rem;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+
+#quest-list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.quest-btn {
+  width: 100%;
+  padding: 0.9rem 1.2rem;
+  margin-bottom: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 1rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+.quest-btn:hover:not(.locked) { border-color: var(--gold); background: #1e1e3a; }
+.quest-btn .label { font-weight: 700; }
+.quest-btn .desc  { color: var(--muted); font-size: 0.85rem; }
+
+.quest-btn.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-style: dashed;
+}
+
+.quest-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--green);
+  background: rgba(74, 222, 128, 0.1);
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.04rem;
+}
+
+.quest-lock {
+  font-size: 0.85rem;
+}
+
 /* ── Setup screen ───────────────────────────────────── */
 .mode-btn {
   width: 100%;
@@ -192,6 +247,21 @@ h1 {
   font-size: 2.2rem;
   color: var(--gold);
   margin-bottom: 0.5rem;
+}
+.victory-text {
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+.unlock-notice {
+  display: none;
+  margin-top: 1rem;
+  padding: 0.6rem 1.2rem;
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid var(--green);
+  border-radius: 10px;
+  color: var(--green);
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 .victory-pi {
   font-size: 0.9rem;

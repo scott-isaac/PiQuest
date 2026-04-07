@@ -1,10 +1,11 @@
 /**
  * Core game logic — screen management, input handling, and game loop.
- * Depends on: chunks.js, milestones.js, deaths.js, audio.js, effects.js
+ * Depends on: quest1.js, quest2.js, quests.js, storage.js, audio.js, effects.js
  */
 let mode = 1;
 let currentIndex = 0;
 let pendingTimer = null;
+let activeQuest = null;
 
 function formatMilestone(m) {
   if (mode === 2) return m.split(" ")[0];
@@ -17,24 +18,62 @@ function showScreen(id) {
   document.getElementById(id).classList.add("active");
 }
 
+// --- Quest picker ---
+
+function renderQuestPicker() {
+  const list = document.getElementById("quest-list");
+  list.innerHTML = "";
+
+  QUESTS.forEach(quest => {
+    const unlocked = Storage.isUnlocked(quest);
+    const completed = Storage.getCompleted().has(quest.id);
+
+    const btn = document.createElement("button");
+    btn.className = "quest-btn" + (unlocked ? "" : " locked");
+    btn.disabled = !unlocked;
+
+    const badge = completed ? ' <span class="quest-badge">completed</span>' : "";
+    const lockIcon = unlocked ? "" : '<span class="quest-lock">\u{1F512}</span> ';
+
+    btn.innerHTML =
+      `<span class="label">${lockIcon}${quest.name}${badge}</span><br>` +
+      `<span class="desc">${quest.subtitle}` +
+      `${!unlocked ? " \u2014 complete the previous quest to unlock" : ""}` +
+      `</span>`;
+
+    if (unlocked) {
+      btn.addEventListener("click", () => {
+        activeQuest = quest;
+        showScreen("setup-screen");
+      });
+    }
+
+    list.appendChild(btn);
+  });
+}
+
+// --- Pi display ---
+
 function renderPiDisplay() {
-  const prefix = '<span class="chunk known">3.14159</span> ';
-  const completed = PI_CHUNKS.slice(0, currentIndex)
+  const prefix = '<span class="chunk known">' + activeQuest.prefix + '</span> ';
+  const completed = activeQuest.chunks.slice(0, currentIndex)
     .map(c => `<span class="chunk known">${c}</span>`)
     .join(" ");
-  const cursor = currentIndex < PI_CHUNKS.length
+  const cursor = currentIndex < activeQuest.chunks.length
     ? ' <span class="chunk cursor">?????</span>'
     : "";
   document.getElementById("pi-display").innerHTML = prefix + completed + cursor;
 }
 
+// --- Game rendering ---
+
 function renderGame() {
   document.getElementById("step-label").textContent =
-    `Step ${currentIndex + 1} of ${PI_CHUNKS.length}`;
+    `Step ${currentIndex + 1} of ${activeQuest.chunks.length}`;
   document.getElementById("milestone").textContent =
-    formatMilestone(MILESTONES[currentIndex]);
+    formatMilestone(activeQuest.milestones[currentIndex]);
   document.getElementById("progress-fill").style.width =
-    `${(currentIndex / PI_CHUNKS.length) * 100}%`;
+    `${(currentIndex / activeQuest.chunks.length) * 100}%`;
 
   renderPiDisplay();
 
@@ -48,29 +87,20 @@ function renderGame() {
   input.focus();
 }
 
-function showVictory() {
-  showScreen("victory-screen");
-  document.getElementById("victory-pi").textContent =
-    "3.14159 " + PI_CHUNKS.join(" ");
-  document.getElementById("progress-fill").style.width = "100%";
-  Audio.playVictory();
-  spawnConfetti();
-}
-
 function advanceToNext() {
   if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
 
-  if (currentIndex >= PI_CHUNKS.length) {
+  if (currentIndex >= activeQuest.chunks.length) {
     showVictory();
     return;
   }
 
   document.getElementById("step-label").textContent =
-    `Step ${currentIndex + 1} of ${PI_CHUNKS.length}`;
+    `Step ${currentIndex + 1} of ${activeQuest.chunks.length}`;
   document.getElementById("milestone").textContent =
-    formatMilestone(MILESTONES[currentIndex]);
+    formatMilestone(activeQuest.milestones[currentIndex]);
   document.getElementById("progress-fill").style.width =
-    `${(currentIndex / PI_CHUNKS.length) * 100}%`;
+    `${(currentIndex / activeQuest.chunks.length) * 100}%`;
   renderPiDisplay();
 
   const input = document.getElementById("digit-input");
@@ -79,15 +109,46 @@ function advanceToNext() {
   input.focus();
 }
 
+// --- Victory ---
+
+function showVictory() {
+  // Persist completion and unlock next quest
+  Storage.markCompleted(activeQuest.id);
+
+  document.getElementById("victory-icon").textContent = activeQuest.victoryIcon;
+  document.getElementById("victory-title").textContent = activeQuest.victoryTitle;
+  document.getElementById("victory-text").textContent = activeQuest.victoryText;
+  document.getElementById("victory-pi").textContent =
+    activeQuest.prefix + " " + activeQuest.chunks.join(" ");
+  document.getElementById("progress-fill").style.width = "100%";
+
+  // Show unlock notice if a new quest was just unlocked
+  const notice = document.getElementById("unlock-notice");
+  if (activeQuest.unlocks) {
+    const next = QUESTS.find(q => q.id === activeQuest.unlocks);
+    if (next) {
+      notice.textContent = "\u{1F513} " + next.name + " unlocked!";
+      notice.style.display = "block";
+    }
+  } else {
+    notice.style.display = "none";
+  }
+
+  showScreen("victory-screen");
+  Audio.playVictory();
+  spawnConfetti();
+}
+
+// --- Input handling ---
+
 function handleSubmit() {
   const input = document.getElementById("digit-input");
   const guess = input.value.trim();
   if (guess.length === 0) return;
 
-  // Cancel any pending failure timer if the player is already moving
   if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
 
-  if (guess === PI_CHUNKS[currentIndex]) {
+  if (guess === activeQuest.chunks[currentIndex]) {
     Audio.playSuccess();
 
     const fb = document.getElementById("feedback");
@@ -95,10 +156,8 @@ function handleSubmit() {
     fb.innerHTML = "<strong>Success! Onward!</strong>";
 
     currentIndex++;
-    // Advance the UI immediately so the player can start typing
     advanceToNext();
 
-    // Clear the success banner after a moment
     pendingTimer = setTimeout(() => {
       fb.className = "feedback";
       fb.innerHTML = "";
@@ -111,8 +170,8 @@ function handleSubmit() {
     const fb = document.getElementById("feedback");
     fb.className = "feedback failure";
     fb.innerHTML =
-      `<strong>\u{1F480} ${DEATHS[currentIndex]}</strong>` +
-      `<div class="correct-answer">\u{1F9E0} The correct chunk was: <strong>${PI_CHUNKS[currentIndex]}</strong></div>` +
+      `<strong>\u{1F480} ${activeQuest.deaths[currentIndex]}</strong>` +
+      `<div class="correct-answer">\u{1F9E0} The correct chunk was: <strong>${activeQuest.chunks[currentIndex]}</strong></div>` +
       `<div class="death-msg">The scroll crumbles\u2026 back to the beginning.</div>`;
 
     currentIndex = 0;
@@ -124,7 +183,9 @@ function handleSubmit() {
 
 document.addEventListener("DOMContentLoaded", () => {
   Audio.preload();
+  renderQuestPicker();
 
+  // Mode selection → start game
   document.querySelectorAll(".mode-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       mode = parseInt(btn.dataset.mode);
@@ -147,6 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("play-again").addEventListener("click", () => {
     currentIndex = 0;
-    showScreen("setup-screen");
+    renderQuestPicker();
+    showScreen("quest-screen");
   });
 });

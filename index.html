@@ -9,10 +9,17 @@
 <body>
 
   <h1>Pi Quest</h1>
-  <p class="subtitle">Memorize 100 digits of Pi, one quest at a time</p>
+  <p class="subtitle">Memorize the digits of Pi, one quest at a time</p>
 
-  <!-- Setup Screen -->
-  <div id="setup-screen" class="screen active">
+  <!-- Quest Picker Screen -->
+  <div id="quest-screen" class="screen active">
+    <div class="section-label">Choose Your Quest</div>
+    <div id="quest-list"></div>
+  </div>
+
+  <!-- Difficulty / Setup Screen -->
+  <div id="setup-screen" class="screen">
+    <div class="section-label">Choose Difficulty</div>
     <button class="mode-btn" data-mode="1">
       <span class="label">Normal</span><br>
       <span class="desc">Full milestone hints to guide your memory</span>
@@ -45,19 +52,21 @@
 
   <!-- Victory Screen -->
   <div id="victory-screen" class="screen">
-    <div style="font-size:3rem;margin-bottom:0.5rem;">&#x1F451;</div>
-    <div class="victory-title">Claim the Crown of Code!</div>
-    <p style="color:var(--muted);margin-top:0.5rem;">You have conquered Pi's challenge and become a legend.</p>
+    <div id="victory-icon" style="font-size:3rem;margin-bottom:0.5rem;"></div>
+    <div class="victory-title" id="victory-title"></div>
+    <p class="victory-text" id="victory-text"></p>
+    <div class="unlock-notice" id="unlock-notice"></div>
     <div class="victory-pi" id="victory-pi"></div>
     <button class="play-again" id="play-again">Play Again</button>
   </div>
 
-  <!-- Data (swappable quest modules) -->
-  <script src="js/data/chunks.js"></script>
-  <script src="js/data/milestones.js"></script>
-  <script src="js/data/deaths.js"></script>
+  <!-- Data (self-contained quest modules) -->
+  <script src="js/data/quest1.js"></script>
+  <script src="js/data/quest2.js"></script>
+  <script src="js/data/quests.js"></script>
 
   <!-- Engine -->
+  <script src="js/storage.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/effects.js"></script>
   <script src="js/game.js"></script>
